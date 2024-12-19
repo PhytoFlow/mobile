@@ -11,7 +11,9 @@ import {
   DefaultTheme as NavigationLightTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Colors, useDarkMode } from "@/libs/theme";
+import { Colors, useThemeMode } from "@/libs/theme";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useColorScheme } from "react-native";
 
 const AppDarkTheme = { ...MD3DarkTheme, colors: Colors.dark };
 const AppLightTheme = { ...MD3LightTheme, colors: Colors.light };
@@ -25,29 +27,46 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 
 export const unstable_settings = { initialRouteName: "(tabs)" };
 
+const queryClient = new QueryClient();
+
+const Theme = {
+  ["dark"]: {
+    appTheme: AppDarkTheme,
+    navigationTheme: DarkTheme,
+  },
+  ["light"]: {
+    appTheme: AppLightTheme,
+    navigationTheme: LightTheme,
+  },
+};
+
 export default function RootLayout() {
-  const { colorScheme } = useDarkMode();
+  const systemColorScheme = useColorScheme();
+  const { themeMode } = useThemeMode();
+
+  const selectedTheme =
+    themeMode === "auto" ? systemColorScheme || "light" : themeMode;
 
   return (
-    <PaperProvider
-      theme={colorScheme === "dark" ? AppDarkTheme : AppLightTheme}
-    >
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : LightTheme}>
-        <Stack
-          screenOptions={{
-            animation: "slide_from_bottom",
-          }}
-        >
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              headerShown: false,
+    <QueryClientProvider client={queryClient}>
+      <PaperProvider theme={Theme[selectedTheme].appTheme}>
+        <ThemeProvider value={Theme[selectedTheme].navigationTheme}>
+          <Stack
+            screenOptions={{
+              animation: "slide_from_bottom",
             }}
-          />
-        </Stack>
-      </ThemeProvider>
+          >
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
+          </Stack>
+        </ThemeProvider>
 
-      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-    </PaperProvider>
+        <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
+      </PaperProvider>
+    </QueryClientProvider>
   );
 }

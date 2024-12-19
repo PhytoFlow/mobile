@@ -88,7 +88,7 @@ export const fetchWeatherData = async ({
         pressure: Math.round(currentData.main.pressure),
         visibility: currentData.visibility,
         clouds: currentData.clouds.all,
-        rain: currentData.rain ? currentData.rain["1h"] : 0,
+        rain: currentData?.rain?.["1h"] ?? 0,
         dewPoint: calculateDewPoint(
           currentData.main.temp,
           currentData.main.humidity,

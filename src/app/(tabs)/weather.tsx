@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
-import { Text, ActivityIndicator, useTheme, Button } from "react-native-paper";
+import { Text, useTheme } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { fetchWeatherData } from "@/libs/api/weather";
@@ -9,6 +9,8 @@ import { RenderDay } from "@/components/weather/RenderDay";
 import { CurrentWeather } from "@/components/weather/CurrentWeather";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import NetInfo from "@react-native-community/netinfo";
+import ErrorComponent from "@/components/Error";
+import LoadingComponent from "@/components/Loading";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -52,25 +54,8 @@ export default function HomeScreen() {
     getWeatherData();
   }, [getWeatherData]);
 
-  const renderError = () => (
-    <View style={styles.errorContainer}>
-      <MaterialCommunityIcons
-        name="alert-circle"
-        size={48}
-        color={theme.colors.error}
-      />
-      <Text
-        variant="bodyLarge"
-        style={[styles.errorText, { color: theme.colors.error }]}
-      >
-        {error}
-      </Text>
-      <Button onPress={getWeatherData}>Tentar Novamente</Button>
-    </View>
-  );
-
   const renderContent = () => {
-    const { current, location, forecast } = weather;
+    const { current, location, forecast } = weather!;
 
     return (
       <View style={styles.mainContainer}>
@@ -118,11 +103,9 @@ export default function HomeScreen() {
   return (
     <ScreenWrapper withScrollView contentContainerStyle={styles.screenWrapper}>
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <LoadingComponent text="Carregando dados climáticos..." />
       ) : error ? (
-        renderError()
+        <ErrorComponent error={error} refetch={getWeatherData} />
       ) : (
         renderContent()
       )}
@@ -133,11 +116,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screenWrapper: {
     flexGrow: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   mainContainer: {
     flex: 1,
@@ -167,16 +145,5 @@ const styles = StyleSheet.create({
   forecastListContent: {
     gap: 12,
     paddingHorizontal: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  errorText: {
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: "center",
   },
 });

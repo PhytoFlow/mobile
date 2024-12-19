@@ -1,30 +1,34 @@
 import React, { useCallback } from "react";
+import { Appbar, Divider, Menu, Tooltip, useTheme } from "react-native-paper";
+import { Colors, useThemeMode } from "@/libs/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Appbar, Tooltip, useTheme } from "react-native-paper";
-import { Colors, useDarkMode } from "@/libs/theme";
+
+type ThemeOption = {
+  label: string;
+  value: "light" | "dark" | "auto";
+  icon: string;
+};
 
 function AppHeader() {
   const theme = useTheme();
-  const { colorScheme, toggleTheme } = useDarkMode();
+  const { themeMode, toggleTheme } = useThemeMode();
+  const [visible, setVisible] = React.useState(false);
 
-  const IconButton = useCallback(
-    (props: { size: number; color: string }) => {
-      return colorScheme === "dark" ? (
-        <MaterialCommunityIcons
-          {...props}
-          color={Colors.dark.primary}
-          name="white-balance-sunny"
-        />
-      ) : (
-        <MaterialCommunityIcons
-          {...props}
-          color={Colors.light.primary}
-          name="moon-waning-crescent"
-        />
-      );
-    },
-    [colorScheme],
-  );
+  const showMenu = () => setVisible(true);
+  const hideMenu = () => setVisible(false);
+
+  const handleThemeChange = (theme: ThemeOption["value"]) => {
+    toggleTheme(theme);
+    hideMenu();
+  };
+
+  const themeOptions: ThemeOption[] = [
+    { label: "Automático (Sistema)", value: "auto", icon: "cog" },
+    { label: "Tema Claro", value: "light", icon: "white-balance-sunny" },
+    { label: "Tema Escuro", value: "dark", icon: "weather-night" },
+  ];
+
+  console.log(themeMode);
 
   return (
     <Appbar.Header elevated mode="small">
@@ -32,16 +36,37 @@ function AppHeader() {
         title="PhytoFlow"
         titleStyle={{ fontWeight: "bold", color: theme.colors.primary }}
       />
-      <Tooltip
-        enterTouchDelay={400}
-        title={
-          colorScheme === "dark"
-            ? "Habilitar tema claro"
-            : "Habilitar tema escuro"
+      <Menu
+        visible={visible}
+        onDismiss={hideMenu}
+        anchorPosition={"bottom"}
+        anchor={
+          <Tooltip enterTouchDelay={400} title={"Escolher tema"}>
+            <Appbar.Action
+              icon={"theme-light-dark"}
+              color={theme.colors.primary}
+              onPress={showMenu}
+            />
+          </Tooltip>
         }
       >
-        <Appbar.Action icon={IconButton} onPress={toggleTheme} />
-      </Tooltip>
+        {themeOptions.map((option) => (
+          <React.Fragment key={option.value}>
+            <Menu.Item
+              title={option.label}
+              onPress={() => handleThemeChange(option.value)}
+              leadingIcon={option.icon}
+              style={{
+                backgroundColor:
+                  option.value === themeMode
+                    ? theme.colors.secondaryContainer
+                    : "transparent",
+              }}
+            />
+            {option.value !== "auto" && <Divider />}
+          </React.Fragment>
+        ))}
+      </Menu>
     </Appbar.Header>
   );
 }

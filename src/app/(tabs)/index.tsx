@@ -20,34 +20,23 @@ import {
   useTheme,
   Chip,
   Button,
+  Snackbar,
 } from "react-native-paper";
 import { WEATHER_CONFIG } from "@/libs/api/weather";
-
-interface Coordinate {
-  latitude: number;
-  longitude: number;
-}
-
-interface SensorValues {
-  temperature: number;
-  humidity: number;
-  soil_humidity: number;
-  light: number;
-  uv_intensity: number;
-  soil_temperature: number;
-}
-
-interface Sensor {
-  identifier: string;
-  name: string;
-  working: boolean;
-  irrigationAvailable: boolean;
-  coordinate: Coordinate;
-  values: SensorValues;
-}
+import { Coordinate, Sensor } from "@/libs/models/backend";
+import { fetchSensors, irrigateSensor } from "@/libs/api/backend";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import ErrorComponent from "@/components/Error";
+import LoadingComponent from "@/components/Loading";
 
 interface MapLayer {
-  key: string;
+  key:
+    | "temp_new"
+    | "precipitation_new"
+    | "clouds_new"
+    | "wind_new"
+    | "pressure_new"
+    | "none";
   label: string;
   icon: string;
   color: string;
@@ -61,14 +50,39 @@ interface SensorItem {
 
 export default function IndexScreen() {
   const theme = useTheme();
+  const queryClient = useQueryClient();
+
   const mapRef = useRef<MapView | null>(null);
   const markerRefs = useRef<Record<string, MapMarker | null>>({});
+
   const [currentLocation, setCurrentLocation] = useState<Region | null>(null);
-  const [currentMapLayer, setCurrentMapLayer] = useState<string>("none");
+  const [currentMapLayer, setCurrentMapLayer] =
+    useState<MapLayer["key"]>("none");
   const [isSensorsModalVisible, setSensorsModalVisible] =
     useState<boolean>(false);
   const [isLayerModalVisible, setLayerModalVisible] = useState<boolean>(false);
-  const [sensors, setSensors] = useState<Sensor[]>([]);
+  const [snackbar, setSnackbar] = useState<{
+    visible: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({
+    visible: false,
+    message: "",
+    type: "success",
+  });
+
+  const {
+    data: sensors,
+    isLoading: isLoadingSensors,
+    isLoadingError: isSensorsError,
+    refetch: sensorsRefetch,
+  } = useQuery({
+    queryKey: ["sensors"],
+    queryFn: fetchSensors,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: true,
+    retry: 3,
+  });
 
   const MAP_LAYERS: MapLayer[] = [
     {
@@ -109,8 +123,32 @@ export default function IndexScreen() {
     },
   ];
 
-  const handleIrrigation = (sensorId: string): void => {
-    console.log(`Irrigando sensor ${sensorId}`);
+  const irrigateMutation = useMutation({
+    mutationFn: irrigateSensor,
+    onSuccess: () => {
+      setSnackbar({
+        visible: true,
+        message: "Irrigação iniciada com sucesso!",
+        type: "success",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["sensors"] });
+    },
+    onError: (error: Error) => {
+      console.error(error);
+      setSnackbar({
+        visible: true,
+        message: `Erro ao irrigar, tente novamente`,
+        type: "error",
+      });
+    },
+    onSettled: () => {
+      setSensorsModalVisible(false);
+    },
+  });
+
+  const handleIrrigation = (sensorId: string) => {
+    irrigateMutation.mutate(sensorId);
   };
 
   const getSensorItems = (sensor: Sensor): SensorItem[] => [
@@ -147,6 +185,8 @@ export default function IndexScreen() {
   ];
 
   useEffect(() => {
+    let locationSubscription: Location.LocationSubscription | null = null;
+
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
@@ -155,74 +195,71 @@ export default function IndexScreen() {
         const initialRegion: Region = {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+          latitudeDelta: 0.0922 / 4,
+          longitudeDelta: 0.0421 / 4,
         };
         setCurrentLocation(initialRegion);
 
-        // Simulação de pontos de irrigação
-        const mockSensors: Sensor[] = [
-          {
-            identifier: "A1",
-            name: "Sensor Milho",
-            working: true,
-            irrigationAvailable: true,
-            coordinate: {
-              latitude: location.coords.latitude + 0.014,
-              longitude: location.coords.longitude + 0.014,
+        try {
+          locationSubscription = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.High,
+              timeInterval: 1000,
+              distanceInterval: 1,
             },
-            values: {
-              temperature: 25.8,
-              humidity: 76.8,
-              soil_humidity: 12,
-              light: 502,
-              uv_intensity: 15,
-              soil_temperature: 12,
+            (newLocation) => {
+              setCurrentLocation((prev) => ({
+                latitude: newLocation.coords.latitude,
+                longitude: newLocation.coords.longitude,
+                latitudeDelta: prev?.latitudeDelta || 0.0922 / 4,
+                longitudeDelta: prev?.longitudeDelta || 0.0421 / 4,
+              }));
             },
-          },
-          {
-            identifier: "A2",
-            name: "Sensor Tomate",
-            working: false,
-            irrigationAvailable: false,
-            coordinate: {
-              latitude: location.coords.latitude + 0.017,
-              longitude: location.coords.longitude + 0.017,
-            },
-            values: {
-              temperature: 27,
-              humidity: 74.4,
-              soil_humidity: 21,
-              light: 561,
-              uv_intensity: 3,
-              soil_temperature: 11,
-            },
-          },
-        ];
-        setSensors(mockSensors);
+          );
+        } catch (error) {
+          console.error("Erro ao monitorar localização:", error);
+          setSnackbar({
+            visible: true,
+            message: "Erro ao atualizar localização",
+            type: "error",
+          });
+        }
       }
     })();
+
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    Object.values(markerRefs.current).forEach((marker) => {
+      if (marker?.hideCallout) {
+        marker.hideCallout();
+      }
+    });
+  }, [theme.dark]);
 
   const handleMarkerPress = (
     coordinate: Coordinate,
-    sensorId?: string,
+    sensorId: string,
   ): void => {
     const offset: Region = {
       latitude: coordinate.latitude,
       longitude: coordinate.longitude,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
+      latitudeDelta: 0.001,
+      longitudeDelta: 0.001,
     };
 
-    offset.latitude += offset.latitudeDelta * 0.3;
+    offset.latitude += offset.latitudeDelta * 0.5;
 
-    mapRef.current?.animateToRegion(offset, 700);
-    if (sensorId) {
-      setTimeout(() => {
-        markerRefs.current[sensorId]?.showCallout();
-      }, 800);
-    }
+    mapRef.current?.animateToRegion(offset, 1000);
+
+    setTimeout(() => {
+      markerRefs.current[sensorId]?.showCallout();
+    });
   };
 
   const SensorsModal: React.FC = () => {
@@ -230,7 +267,11 @@ export default function IndexScreen() {
       <Portal>
         <Modal
           visible={isSensorsModalVisible}
-          onDismiss={() => setSensorsModalVisible(false)}
+          onDismiss={() => {
+            if (irrigateMutation.isPending) return;
+
+            setSensorsModalVisible(false);
+          }}
           contentContainerStyle={styles.modalContainer}
         >
           <Surface style={[styles.modalContent, { width: "100%" }]}>
@@ -238,7 +279,7 @@ export default function IndexScreen() {
               Sensores disponíveis
             </Text>
             <Divider style={{ marginBottom: 8 }} />
-            {sensors.map((sensor) => (
+            {sensors?.map((sensor) => (
               <List.Item
                 key={sensor.identifier}
                 title={`${sensor.name} ${sensor.identifier}`}
@@ -255,7 +296,15 @@ export default function IndexScreen() {
                     mode="contained"
                     icon="water"
                     onPress={() => handleIrrigation(sensor.identifier)}
-                    disabled={!sensor.irrigationAvailable || !sensor.working}
+                    disabled={
+                      !sensor.irrigationAvailable ||
+                      !sensor.working ||
+                      irrigateMutation.isPending
+                    }
+                    loading={
+                      irrigateMutation.isPending &&
+                      irrigateMutation.variables === sensor.identifier
+                    }
                   >
                     Irrigar
                   </Button>
@@ -269,6 +318,60 @@ export default function IndexScreen() {
           </Surface>
         </Modal>
       </Portal>
+    );
+  };
+
+  const handleZoomIn = () => {
+    if (!mapRef.current) return;
+
+    mapRef.current.getCamera().then((camera) => {
+      camera.zoom = (camera.zoom || 15) + 1;
+      mapRef.current?.animateCamera(camera, { duration: 300 });
+    });
+  };
+
+  const handleZoomOut = () => {
+    if (!mapRef.current) return;
+
+    mapRef.current.getCamera().then((camera) => {
+      camera.zoom = Math.max((camera.zoom || 15) - 1, 0);
+      mapRef.current?.animateCamera(camera, { duration: 300 });
+    });
+  };
+
+  const handleMyLocation = async () => {
+    const region: Region = {
+      latitude: currentLocation!.latitude,
+      longitude: currentLocation!.longitude,
+      latitudeDelta: 0.0922 / 4,
+      longitudeDelta: 0.0421 / 4,
+    };
+
+    const boundaries = await mapRef.current?.getMapBoundaries();
+
+    if (!boundaries) {
+      mapRef.current?.animateToRegion(region, 800);
+      return;
+    }
+
+    const latitudeDelta =
+      boundaries.northEast.latitude - boundaries.southWest.latitude;
+    const longitudeDelta =
+      boundaries.northEast.longitude - boundaries.southWest.longitude;
+
+    mapRef.current?.animateToRegion(
+      {
+        ...region,
+        latitudeDelta:
+          latitudeDelta > region.latitudeDelta
+            ? region.latitudeDelta
+            : latitudeDelta,
+        longitudeDelta:
+          longitudeDelta > region.longitudeDelta
+            ? region.longitudeDelta
+            : longitudeDelta,
+      },
+      800,
     );
   };
 
@@ -329,6 +432,19 @@ export default function IndexScreen() {
     );
   };
 
+  if (isLoadingSensors) {
+    return <LoadingComponent text="Carregando sensores..." />;
+  }
+
+  if (isSensorsError) {
+    return (
+      <ErrorComponent
+        error={"Ocorreu um erro ao carregar os sensores."}
+        refetch={sensorsRefetch}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
       {currentLocation && (
@@ -341,8 +457,8 @@ export default function IndexScreen() {
           style={styles.map}
           initialRegion={currentLocation}
           showsUserLocation
-          showsMyLocationButton
-          zoomControlEnabled
+          showsMyLocationButton={false}
+          zoomControlEnabled={false}
           zoomEnabled
           showsPointsOfInterest={false}
           showsCompass={false}
@@ -352,7 +468,7 @@ export default function IndexScreen() {
           loadingIndicatorColor={theme.colors.primary}
           loadingBackgroundColor={theme.colors.background}
         >
-          {sensors.map((sensor) => (
+          {sensors?.map((sensor) => (
             <Marker
               ref={(ref) => (markerRefs.current[sensor.identifier] = ref)}
               key={sensor.identifier}
@@ -360,7 +476,9 @@ export default function IndexScreen() {
               title={`${sensor.name} (${sensor.identifier})`}
               pinColor={sensor.working ? "green" : "wheat"}
               calloutAnchor={{ x: 0.5, y: -0.15 }}
-              onPress={() => handleMarkerPress(sensor.coordinate)}
+              onPress={() =>
+                handleMarkerPress(sensor.coordinate, sensor.identifier)
+              }
             >
               <Callout tooltip>
                 <View style={{ alignItems: "center" }}>
@@ -400,8 +518,8 @@ export default function IndexScreen() {
                         disabled={!sensor.irrigationAvailable}
                       >
                         {sensor.irrigationAvailable
-                          ? "Irrigar Disponível"
-                          : "Irrigar Indisponível"}
+                          ? "Irrigar disponível"
+                          : "Irrigar indisponível"}
                       </Chip>
                     </View>
 
@@ -410,8 +528,13 @@ export default function IndexScreen() {
                         key={index}
                         title={() => (
                           <Text>
-                            {item.title}:{" "}
-                            <Text style={{ fontWeight: "bold" }}>
+                            {item.title}
+                            {": "}
+                            <Text
+                              style={{
+                                fontWeight: "bold",
+                              }}
+                            >
                               {item.description}
                             </Text>
                           </Text>
@@ -426,7 +549,6 @@ export default function IndexScreen() {
                       />
                     ))}
                   </Surface>
-                  {/* Arrow */}
                   <View
                     style={[
                       styles.arrow,
@@ -466,6 +588,47 @@ export default function IndexScreen() {
       <MapLayerLegend />
       <SensorsModal />
       <LayerSelectionModal />
+
+      <FAB
+        icon="plus"
+        size="small"
+        variant="secondary"
+        onPress={handleZoomIn}
+        style={styles.zoomInButton}
+      />
+      <FAB
+        icon="minus"
+        size="small"
+        variant="secondary"
+        onPress={handleZoomOut}
+        style={styles.zoomOutButton}
+      />
+
+      <FAB
+        icon="crosshairs-gps"
+        size="small"
+        variant="secondary"
+        onPress={handleMyLocation}
+        style={styles.findMeButton}
+      />
+
+      <Snackbar
+        visible={snackbar.visible}
+        onDismiss={() => setSnackbar((prev) => ({ ...prev, visible: false }))}
+        duration={3000}
+        style={{
+          backgroundColor:
+            snackbar.type === "success"
+              ? theme.colors.primary
+              : theme.colors.error,
+        }}
+        action={{
+          label: "OK",
+          onPress: () => setSnackbar((prev) => ({ ...prev, visible: false })),
+        }}
+      >
+        {snackbar.message}
+      </Snackbar>
     </View>
   );
 }
@@ -479,28 +642,13 @@ const styles = StyleSheet.create({
   },
   layerButton: {
     position: "absolute",
-    bottom: 35,
-    left: 10,
+    bottom: 36,
+    left: 12,
   },
   sensorsButton: {
     position: "absolute",
-    bottom: 105,
-    left: 10,
-  },
-  legendGradient: {
-    height: 20,
-    width: "100%",
-    backgroundColor: "linear-gradient(to right, blue, red)",
-  },
-  irrigationList: {
-    position: "absolute",
-    bottom: 10,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 10,
-  },
-  irrigationChip: {
-    marginRight: 10,
+    bottom: 104,
+    left: 12,
   },
   modalContainer: {
     justifyContent: "center",
@@ -523,8 +671,8 @@ const styles = StyleSheet.create({
   },
   legendChip: {
     position: "absolute",
-    top: 10,
-    left: 10,
+    top: 12,
+    left: 12,
     opacity: 0.8,
   },
   irrigationControls: {
@@ -550,5 +698,20 @@ const styles = StyleSheet.create({
     borderStyle: "solid",
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
+  },
+  zoomInButton: {
+    position: "absolute",
+    bottom: 64,
+    right: 12,
+  },
+  zoomOutButton: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+  },
+  findMeButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
   },
 });
