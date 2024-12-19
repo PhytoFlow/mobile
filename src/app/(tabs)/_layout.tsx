@@ -16,12 +16,26 @@ function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Sensores",
           tabBarIcon: (props) => (
             <MaterialCommunityIcons
               {...props}
               size={24}
-              name={props.focused ? "home" : "home-outline"}
+              name={props.focused ? "map" : "map-outline"}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "Histórico",
+          tabBarIcon: (props) => (
+            <MaterialCommunityIcons
+              {...props}
+              size={24}
+              name={props.focused ? "av-timer" : "history"}
             />
           ),
         }}
@@ -35,19 +49,6 @@ function TabLayout() {
               {...props}
               size={24}
               name={props.focused ? "weather-sunny" : "weather-sunset"}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="maps"
-        options={{
-          title: "Mapas",
-          tabBarIcon: (props) => (
-            <MaterialCommunityIcons
-              {...props}
-              size={24}
-              name={props.focused ? "map" : "map-outline"}
             />
           ),
         }}

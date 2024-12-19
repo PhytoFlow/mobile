@@ -1,98 +1,62 @@
 import axios from "axios";
 import {
   ForecastAPI,
-  LocationData,
   CurrentWeatherAPI,
   WeatherUI,
   AirPollutionAPI,
 } from "@/libs/models/weather";
 import { calculateDewPoint } from "../utils/calculateDewPoint";
+import { AxiosResponse } from "axios";
 
-const API_KEY = "48d5485df65b2549a095241e17ed419f";
-const BASE_URL = "https://api.openweathermap.org/data/2.5";
-const GEO_URL = "https://api.openweathermap.org/geo/1.0";
+export const WEATHER_CONFIG = {
+  API_KEY: "48d5485df65b2549a095241e17ed419f",
+  BASE_URL: "https://api.openweathermap.org/data/2.5",
+  MAP_URL: "https://tile.openweathermap.org/map",
+  LANGUAGE: "pt_br",
+  UNITS: "metric",
+} as const;
 
-/*export const fetchLocations = async ({
-  cityName,
-}: {
-  cityName: string;
-}): Promise<LocationData[]> => {
-  try {
-    const response = await axios.get(`${GEO_URL}/direct`, {
-      params: {
-        q: cityName,
-        limit: 5,
-        appid: API_KEY,
-      },
-    });
+const AQI_DESCRIPTIONS: Record<number, string> = {
+  1: "Bom",
+  2: "Moderado",
+  3: "Ruim",
+  4: "Muito Ruim",
+  5: "Perigoso",
+};
 
-    return response.data.map((location: any) => ({
-      name: location.name,
-      country: location.country,
-      lat: location.lat,
-      lon: location.lon,
-    }));
-  } catch (error) {
-    console.error("Error fetching locations:", error);
-    return [];
-  }
-};*/
-
-// Fetch weather by latitude and longitude
-export const fetchWeatherByLatLong = async ({
+export const fetchWeatherData = async ({
   latitude,
   longitude,
 }: {
   latitude: number;
   longitude: number;
-  days?: number;
 }): Promise<WeatherUI> => {
+  if (!latitude || !longitude) {
+    throw new Error("Latitude e longitude são obrigatórios");
+  }
+
   try {
     const [currentResponse, forecastResponse, airPollutionResponse] =
       await Promise.all([
-        axios.get<CurrentWeatherAPI>(`${BASE_URL}/weather`, {
-          params: {
-            lat: latitude,
-            lon: longitude,
-            appid: API_KEY,
-            units: "metric",
-            lang: "pt_br",
-          },
-        }),
-        axios.get<ForecastAPI>(`${BASE_URL}/forecast`, {
-          params: {
-            lat: latitude,
-            lon: longitude,
-            appid: API_KEY,
-            units: "metric",
-            lang: "pt_br",
-          },
-        }),
-        axios.get<AirPollutionAPI>(`${BASE_URL}/air_pollution`, {
-          params: {
-            lat: latitude,
-            lon: longitude,
-            appid: API_KEY,
-          },
-        }),
+        fetchCurrentWeather(latitude, longitude),
+        fetchForecast(latitude, longitude),
+        fetchAirPollution(latitude, longitude),
       ]);
 
-    const currentData = currentResponse.data;
-    const forecastData = forecastResponse.data;
-    const airPollutionData = airPollutionResponse.data;
+    const { data: currentData } = currentResponse;
+    const {
+      data: { list: forecastList },
+    } = forecastResponse;
+    const {
+      data: {
+        list: [airPollutionData],
+      },
+    } = airPollutionResponse;
 
-    // Mapear os níveis de AQI para descrições
-    const aqiDescriptions = [
-      "Bom",
-      "Moderado",
-      "Ruim",
-      "Muito Ruim",
-      "Perigoso",
-    ];
-    const aqiValue = airPollutionData.list[0].main.aqi;
-    const aqiDescription = aqiDescriptions[aqiValue - 1] || "Desconhecido";
+    const aqiValue = airPollutionData.main.aqi;
+    const aqiDescription = AQI_DESCRIPTIONS[aqiValue] || "Desconhecido";
 
-    const dailyForecast = forecastData.list
+    const dailyForecast = forecastList
       .filter((item) => item.dt_txt.includes("12:00:00"))
       .slice(0, 5)
       .map((item) => ({
@@ -100,7 +64,7 @@ export const fetchWeatherByLatLong = async ({
         temp: Math.round(item.main.temp),
         condition: {
           description: item.weather[0].description,
-          icon: `https://openweathermap.org/img/wn/${item.weather[0].icon}@2x.png`,
+          icon: getWeatherIconUrl(item.weather[0].icon),
         },
         humidity: item.main.humidity,
       }));
@@ -117,7 +81,7 @@ export const fetchWeatherByLatLong = async ({
         feels_like: Math.round(currentData.main.feels_like),
         condition: {
           text: currentData.weather[0].description,
-          icon: `https://openweathermap.org/img/wn/${currentData.weather[0].icon}@2x.png`,
+          icon: getWeatherIconUrl(currentData.weather[0].icon),
         },
         wind: currentData.wind,
         humidity: currentData.main.humidity,
@@ -134,7 +98,50 @@ export const fetchWeatherByLatLong = async ({
       forecast: dailyForecast,
     };
   } catch (error) {
-    console.error("Error fetching weather by lat/long:", error);
-    throw error;
+    console.error("Erro ao buscar dados meteorológicos:", error);
+    throw new Error("Falha ao recuperar dados meteorológicos");
   }
 };
+
+const fetchCurrentWeather = (
+  latitude: number,
+  longitude: number,
+): Promise<AxiosResponse<CurrentWeatherAPI>> =>
+  axios.get(`${WEATHER_CONFIG.BASE_URL}/weather`, {
+    params: {
+      lat: latitude,
+      lon: longitude,
+      appid: WEATHER_CONFIG.API_KEY,
+      units: WEATHER_CONFIG.UNITS,
+      lang: WEATHER_CONFIG.LANGUAGE,
+    },
+  });
+
+const fetchForecast = (
+  latitude: number,
+  longitude: number,
+): Promise<AxiosResponse<ForecastAPI>> =>
+  axios.get(`${WEATHER_CONFIG.BASE_URL}/forecast`, {
+    params: {
+      lat: latitude,
+      lon: longitude,
+      appid: WEATHER_CONFIG.API_KEY,
+      units: WEATHER_CONFIG.UNITS,
+      lang: WEATHER_CONFIG.LANGUAGE,
+    },
+  });
+
+const fetchAirPollution = (
+  latitude: number,
+  longitude: number,
+): Promise<AxiosResponse<AirPollutionAPI>> =>
+  axios.get(`${WEATHER_CONFIG.BASE_URL}/air_pollution`, {
+    params: {
+      lat: latitude,
+      lon: longitude,
+      appid: WEATHER_CONFIG.API_KEY,
+    },
+  });
+
+const getWeatherIconUrl = (iconCode: string): string =>
+  `https://openweathermap.org/img/wn/${iconCode}@2x.png`;

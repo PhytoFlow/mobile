@@ -1,14 +1,3 @@
-/*export type LocationData = {
-  name: string;
-  region: string;
-  country: string;
-  lat: number;
-  lon: number;
-  tz_id: string;
-  localtime_epoch: number;
-  localtime: string;
-};*/
-
 export type CurrentWeatherUI = {
   condition: {
     text: string;
@@ -28,7 +17,7 @@ export type CurrentWeatherUI = {
   rain: number;
   dewPoint: number;
   feels_like: number;
-  airQuality: "Bom" | "Moderado" | "Ruim" | "Muito Ruim" | "Perigoso";
+  airQuality: string;
 };
 
 export interface ForecastUI {

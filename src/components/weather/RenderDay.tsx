@@ -38,7 +38,10 @@ export const RenderDay: React.FC<RenderImageProp> = ({ item }) => {
           {item.condition.description}
         </Text>
 
-        <Text variant="titleMedium" style={styles.temp}>
+        <Text
+          variant="titleMedium"
+          style={[styles.temp, { color: theme.colors.primary }]}
+        >
           {item.temp} °C
         </Text>
       </Card.Content>

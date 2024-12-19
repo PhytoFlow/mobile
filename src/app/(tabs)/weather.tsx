@@ -1,172 +1,182 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, FlatList, Alert } from "react-native";
-import { Text, ActivityIndicator, useTheme } from "react-native-paper";
+import { View, FlatList, StyleSheet } from "react-native";
+import { Text, ActivityIndicator, useTheme, Button } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { debounce } from "lodash";
 import * as Location from "expo-location";
-import { fetchWeatherByLatLong } from "@/libs/api/weather";
-import { LocationData, WeatherApiResponse } from "@/libs/models/weather";
+import { fetchWeatherData } from "@/libs/api/weather";
+import { WeatherUI } from "@/libs/models/weather";
 import { RenderDay } from "@/components/weather/RenderDay";
 import { CurrentWeather } from "@/components/weather/CurrentWeather";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import NetInfo from "@react-native-community/netinfo";
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const [showSearchBar, setShowSearchBar] = useState(false);
-  const [locations, setLocations] = useState<LocationData[]>([]);
-  const [weather, setWeather] = useState<WeatherApiResponse | null>({
-    current: null,
-    location: null,
-    forecast: null,
-  });
+  const [weather, setWeather] = useState<WeatherUI | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handelLocation = (loc: { name: string }) => {
-    console.log(locations);
-    setLocations([]);
-    setShowSearchBar(false);
-    setLoading(true);
-    /*fetchWeatherForecast({
-      cityName: loc.name,
-    }).then((data) => {
-      setWeather(data);
-      setLoading(false);
-      console.log(data);
-    });*/
-  };
-
-  const handleSearch = (value: string) => {
-    if (value.length > 2) {
-      //fetchLocations({ cityName: value }).then((data) => setLocations(data));
-    }
-  };
-
-  useEffect(() => {
-    fetchMyWeatherData();
-  }, []);
-
-  const fetchMyWeatherData = async () => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission to access location was denied");
+  const getWeatherData = useCallback(async () => {
+    try {
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected) {
+        setError("Sem conexão com a internet");
+        setLoading(false);
         return;
       }
-      Location.getCurrentPositionAsync({}).then((location) => {
-        fetchWeatherByLatLong({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        }).then((data) => {
-          setWeather(data);
-          setLoading(false);
-        });
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setError("Permissão de localização negada");
+        setLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const data = await fetchWeatherData({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       });
-    })();
-  };
 
-  const handleDebounce = useCallback(debounce(handleSearch, 500), []);
-  const { current, location, forecast } = weather;
+      setWeather(data);
+      setError(null);
+    } catch (err) {
+      console.error("Erro ao buscar dados meteorológicos:", err);
+      setError("Falha ao carregar dados meteorológicos");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  return (
-    <ScreenWrapper
-      withScrollView
-      contentContainerStyle={{
-        flexGrow: 1,
-      }}
-    >
-      {loading ? (
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <ActivityIndicator size="large" />
-        </View>
-      ) : (
-        <View style={{ flex: 1 }}>
-          {/* SEARCH BAR SECTION */}
-          {/*<View
-            style={{
-              marginHorizontal: 16,
-              position: "relative",
-              zIndex: 10,
-            }}
-          >
-            <SearchBar
-              showSearchBar={showSearchBar}
-              setShowSearchBar={setShowSearchBar}
-              handleDebounce={handleDebounce}
+  useEffect(() => {
+    getWeatherData();
+  }, [getWeatherData]);
+
+  const renderError = () => (
+    <View style={styles.errorContainer}>
+      <MaterialCommunityIcons
+        name="alert-circle"
+        size={48}
+        color={theme.colors.error}
+      />
+      <Text
+        variant="bodyLarge"
+        style={[styles.errorText, { color: theme.colors.error }]}
+      >
+        {error}
+      </Text>
+      <Button onPress={getWeatherData}>Tentar Novamente</Button>
+    </View>
+  );
+
+  const renderContent = () => {
+    const { current, location, forecast } = weather;
+
+    return (
+      <View style={styles.mainContainer}>
+        <View style={styles.weatherContainer}>
+          <View style={styles.locationContainer}>
+            <Text variant="headlineSmall">
+              {location.name}, {location.country}
+            </Text>
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={20}
+              color={theme.colors.onSurfaceVariant}
+              style={styles.locationIcon}
             />
-            {locations.length > 0 && showSearchBar ? (
-              <LocationsList
-                locations={locations}
-                handleLocation={handelLocation}
-              />
-            ) : null}
-          </View>*/}
+          </View>
 
-          <View
-            style={{
-              flex: 1,
-              margin: 16,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Text variant="headlineSmall">
-                {location.name}, {location.country}
-              </Text>
-              <MaterialCommunityIcons
-                name="map-marker"
-                size={20}
-                color={theme.colors.onSurfaceVariant}
-                style={{ marginLeft: 8 }}
-              />
-            </View>
+          <CurrentWeather weather={current} />
 
-            <CurrentWeather current={current} />
+          <View style={styles.forecastHeaderContainer}>
+            <MaterialCommunityIcons
+              name="calendar-month"
+              size={28}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text variant="titleMedium" style={styles.forecastHeaderText}>
+              Previsão diária (às 12h)
+            </Text>
+          </View>
 
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <MaterialCommunityIcons
-                name="calendar-month"
-                size={28}
-                color={theme.colors.secondary}
-              />
-              <Text
-                variant="titleMedium"
-                style={{
-                  marginLeft: 8,
-                  marginVertical: 16,
-                }}
-              >
-                Previsão diária (às 12h)
-              </Text>
-            </View>
-
-            <View style={{ marginHorizontal: -16 }}>
-              <FlatList
-                contentContainerStyle={{ gap: 12, paddingHorizontal: 16 }}
-                data={forecast}
-                renderItem={({ item }) => <RenderDay item={item} />}
-                horizontal
-                overScrollMode="never"
-                showsHorizontalScrollIndicator={false}
-              />
-            </View>
+          <View style={styles.forecastListContainer}>
+            <FlatList
+              contentContainerStyle={styles.forecastListContent}
+              data={forecast}
+              renderItem={({ item }) => <RenderDay item={item} />}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item, index) => `forecast-${index}`}
+            />
           </View>
         </View>
+      </View>
+    );
+  };
+
+  return (
+    <ScreenWrapper withScrollView contentContainerStyle={styles.screenWrapper}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" />
+        </View>
+      ) : error ? (
+        renderError()
+      ) : (
+        renderContent()
       )}
     </ScreenWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  screenWrapper: {
+    flexGrow: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mainContainer: {
+    flex: 1,
+  },
+  weatherContainer: {
+    flex: 1,
+    margin: 16,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  locationIcon: {
+    marginLeft: 8,
+  },
+  forecastHeaderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  forecastHeaderText: {
+    marginLeft: 8,
+    marginVertical: 16,
+  },
+  forecastListContainer: {
+    marginHorizontal: -16,
+  },
+  forecastListContent: {
+    gap: 12,
+    paddingHorizontal: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  errorText: {
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+});

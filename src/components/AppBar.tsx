@@ -33,7 +33,7 @@ function AppHeader() {
         titleStyle={{ fontWeight: "bold", color: theme.colors.primary }}
       />
       <Tooltip
-        enterTouchDelay={250}
+        enterTouchDelay={400}
         title={
           colorScheme === "dark"
             ? "Habilitar tema claro"

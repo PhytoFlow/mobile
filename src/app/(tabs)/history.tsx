@@ -1,5 +1,5 @@
 import { View } from "react-native";
 
-export default function Maps() {
+export default function Index() {
   return <View></View>;
 }

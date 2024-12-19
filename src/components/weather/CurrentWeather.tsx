@@ -5,52 +5,52 @@ import { CurrentWeatherUI } from "@/libs/models/weather";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 type CurrentWeatherProp = {
-  current: CurrentWeatherUI;
+  weather: CurrentWeatherUI;
 };
 
-export const CurrentWeather: React.FC<CurrentWeatherProp> = ({ current }) => {
+export const CurrentWeather: React.FC<CurrentWeatherProp> = ({ weather }) => {
   const theme = useTheme();
 
   const weatherData = [
     {
       label: "Umidade",
-      value: `${current.humidity} %`,
-      icon: "water" as const,
+      value: `${weather.humidity} %`,
+      icon: "water-percent" as const,
     },
     {
       label: "Chuva (1h)",
-      value: `${current.rain.toFixed(1)} mm/h`,
+      value: `${weather.rain.toFixed(1)} mm`,
       icon: "weather-rainy" as const,
     },
     {
       label: "Ponto de orvalho",
-      value: `${current.dewPoint} °C`,
+      value: `${weather.dewPoint} °C`,
       icon: "water-outline" as const,
     },
     {
       label: "Nebulosidade",
-      value: `${current.clouds} %`,
+      value: `${weather.clouds} %`,
       icon: "cloud" as const,
     },
     {
       label: "Vento",
-      value: `${(current.wind.speed * 3.6).toFixed(1)} km/h`,
+      value: `${(weather.wind.speed * 3.6).toFixed(1)} km/h`,
       icon: "weather-windy" as const,
-      rotation: current.wind.deg,
+      rotation: weather.wind.deg,
     },
     {
       label: "Pressão",
-      value: `${current.pressure} mb`,
-      icon: "thermometer" as const,
+      value: `${weather.pressure} mb`,
+      icon: "gauge" as const,
     },
     {
       label: "Visibilidade",
-      value: `${(current.visibility / 1000).toFixed(2)} km`,
+      value: `${(weather.visibility / 1000).toFixed(2)} km`,
       icon: "eye" as const,
     },
     {
       label: "Qualidade do ar",
-      value: current.airQuality,
+      value: weather.airQuality,
       icon: "air-filter" as const,
     },
   ];
@@ -59,31 +59,34 @@ export const CurrentWeather: React.FC<CurrentWeatherProp> = ({ current }) => {
     <React.Fragment>
       <View style={styles.temperatureContainer}>
         <View style={styles.temperatureTextContainer}>
-          <Text variant="displayLarge" style={styles.temperatureText}>
-            {current.temp}°
+          <Text
+            variant="displayLarge"
+            style={[styles.temperatureText, { color: theme.colors.primary }]}
+          >
+            {weather.temp}°
           </Text>
 
           <View style={styles.temperatureDetailsContainer}>
             <Text variant="titleMedium">
-              {current.temp_max}°C / {current.temp_min}°C
+              {weather.temp_max}°C / {weather.temp_min}°C
             </Text>
 
             <Text variant="titleMedium" style={{ textTransform: "capitalize" }}>
-              {current.condition.text}
+              {weather.condition.text}
             </Text>
           </View>
         </View>
 
         <Image
           source={{
-            uri: current.condition?.icon,
+            uri: weather.condition?.icon,
           }}
           style={styles.weatherIcon}
         />
       </View>
 
       <Text variant="titleMedium">
-        Sensação térmica de {current.feels_like}°C
+        Sensação térmica de {weather.feels_like}°C
       </Text>
 
       <View style={styles.detailsGridContainer}>
