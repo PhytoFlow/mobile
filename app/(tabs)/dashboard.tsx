@@ -83,7 +83,7 @@ const SensorDashboard = () => {
         useShadowColorFromDataset: true,
         decimalPlaces: 1,
         propsForLabels: {
-          fontFamily: processFontFamily("PoppinsRegular")!,
+          fontFamily: processFontFamily("RobotoRegular")!,
           fontSize: 11,
         },
       }}

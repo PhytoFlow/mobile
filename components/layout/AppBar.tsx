@@ -32,7 +32,7 @@ function AppHeader() {
       <Appbar.Content
         title="PhytoFlow"
         titleStyle={{
-          fontFamily: "PoppinsBold",
+          fontFamily: "RobotoBold",
           color: theme.colors.primary,
         }}
       />

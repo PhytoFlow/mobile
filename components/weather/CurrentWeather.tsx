@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   temperatureText: {
     textAlign: "center",
-    fontFamily: "PoppinsBold",
+    fontFamily: "RobotoBold",
   },
   temperatureDetailsContainer: {
     marginLeft: 12,
