@@ -18,8 +18,8 @@ export const fetchSensors = async (): Promise<Sensor[]> => {
       working: true,
       irrigationAvailable: true,
       coordinate: {
-        latitude: -23.5505,
-        longitude: -46.6333,
+        latitude: -16.60659,
+        longitude: -49.263305,
       },
       values: {
         temperature: 25.8,
@@ -33,11 +33,11 @@ export const fetchSensors = async (): Promise<Sensor[]> => {
     {
       identifier: "A2",
       name: "Sensor Tomate",
-      working: false,
+      working: true,
       irrigationAvailable: false,
       coordinate: {
-        latitude: -23.5605,
-        longitude: -46.6433,
+        latitude: -16.607046,
+        longitude: -49.265708,
       },
       values: {
         temperature: 27,
@@ -48,6 +48,17 @@ export const fetchSensors = async (): Promise<Sensor[]> => {
         soil_temperature: 11,
       },
     },
+    {
+      identifier: "A3",
+      name: "Sensor Repolho",
+      working: false,
+      irrigationAvailable: false,
+      coordinate: {
+        latitude: -16.605408,
+        longitude: -49.263652,
+      },
+      values: null,
+    },
   ];
 };
 
@@ -55,7 +66,7 @@ export const irrigateSensor = async (sensorId: string): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, MOCK_API_DELAY));
 
   // Simulate random API error
-  if (Math.random() < 0.2) {
+  if (Math.random() < 0.1) {
     throw new Error("Failed to initiate irrigation");
   }
 };
