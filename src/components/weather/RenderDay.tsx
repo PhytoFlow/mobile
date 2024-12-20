@@ -8,7 +8,7 @@ type RenderImageProp = {
   item: ForecastUI;
 };
 
-export const RenderDay: React.FC<RenderImageProp> = ({ item }) => {
+const RenderDay: React.FC<RenderImageProp> = ({ item }) => {
   const theme = useTheme();
   const date = new Date(item.date);
   const options: Intl.DateTimeFormatOptions = { weekday: "long" };
@@ -81,3 +81,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
+export default RenderDay;

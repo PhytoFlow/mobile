@@ -18,7 +18,7 @@ type Props = ScrollViewProps & {
   contentContainerStyle?: StyleProp<ViewStyle>;
 };
 
-export default function ScreenWrapper({
+function ScreenWrapper({
   children,
   withScrollView = true,
   style,
@@ -64,3 +64,5 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+export default ScreenWrapper;

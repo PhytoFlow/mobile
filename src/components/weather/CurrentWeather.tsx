@@ -8,7 +8,7 @@ type CurrentWeatherProp = {
   weather: CurrentWeatherUI;
 };
 
-export const CurrentWeather: React.FC<CurrentWeatherProp> = ({ weather }) => {
+const CurrentWeather: React.FC<CurrentWeatherProp> = ({ weather }) => {
   const theme = useTheme();
 
   const weatherData = [
@@ -175,3 +175,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
+
+export default CurrentWeather;

@@ -1,3 +1,8 @@
+import { SensorValueKeys } from "../models/backend";
+
+/**
+ * Cores utilizadas no tema do aplicativo pela biblioteca Material UI.
+ */
 export const Colors = {
   light: {
     primary: "rgb(0, 110, 0)",
@@ -83,4 +88,19 @@ export const Colors = {
     onSurfaceDisabled: "rgba(226, 227, 220, 0.38)",
     backdrop: "rgba(44, 50, 41, 0.4)",
   },
+};
+
+export const chartColors: Record<
+  SensorValueKeys,
+  {
+    light: string;
+    dark: string;
+  }
+> = {
+  humidity: { light: "#4A90E2", dark: "#0066CC" },
+  soil_humidity: { light: "#8BC34A", dark: "#4CAF50" },
+  temperature: { light: "#FF5722", dark: "#E64A19" },
+  soil_temperature: { light: "#795548", dark: "#5D4037" },
+  light: { light: "#FFC107", dark: "#FFA000" },
+  uv_intensity: { light: "#9C27B0", dark: "#7B1FA2" },
 };

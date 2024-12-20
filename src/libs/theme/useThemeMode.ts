@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Storage } from "../storage";
 import { useGlobalSearchParams, useRouter } from "expo-router";
 
+/**
+ * Gerencia o modo de tema (claro, escuro ou automático) com base em configurações globais e armazenadas, permitindo alternar entre os modos.
+ */
 export const useThemeMode = () => {
   const router = useRouter();
   const { themeMode: globalThemeMode } = useGlobalSearchParams();

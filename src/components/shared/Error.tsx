@@ -6,9 +6,14 @@ import { Button, Text, useTheme } from "react-native-paper"; // Se estiver usand
 interface ErrorComponentProps {
   error: string;
   refetch: () => void;
+  withRefetch?: boolean;
 }
 
-const ErrorComponent: React.FC<ErrorComponentProps> = ({ error, refetch }) => {
+const ErrorComponent: React.FC<ErrorComponentProps> = ({
+  error,
+  refetch,
+  withRefetch = true,
+}) => {
   const theme = useTheme();
 
   return (
@@ -24,7 +29,7 @@ const ErrorComponent: React.FC<ErrorComponentProps> = ({ error, refetch }) => {
       >
         {error}
       </Text>
-      <Button onPress={refetch}>Tentar Novamente</Button>
+      {withRefetch ? <Button onPress={refetch}>Tentar Novamente</Button> : null}
     </View>
   );
 };

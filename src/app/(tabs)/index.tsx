@@ -8,6 +8,7 @@ import MapView, {
   Region,
   MapMarker,
 } from "react-native-maps";
+
 import * as Location from "expo-location";
 import {
   Modal,
@@ -26,8 +27,11 @@ import { WEATHER_CONFIG } from "@/libs/api/weather";
 import { Coordinate, Sensor } from "@/libs/models/backend";
 import { fetchSensors, irrigateSensor } from "@/libs/api/backend";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import ErrorComponent from "@/components/Error";
-import LoadingComponent from "@/components/Loading";
+import {
+  LoadingComponent,
+  ErrorComponent,
+  ScreenWrapper,
+} from "@/components/shared";
 
 interface MapLayer {
   key:
@@ -168,12 +172,12 @@ export default function IndexScreen() {
       icon: "sprinkler",
     },
     {
-      title: "Luminosidade",
-      description: `${sensor.values.light} lux`,
+      title: "Intensidade da luz",
+      description: `${sensor.values.light} cd`,
       icon: "lightbulb-on",
     },
     {
-      title: "Intensidade UV",
+      title: "Índice UV",
       description: `${sensor.values.uv_intensity}`,
       icon: "sun-wireless",
     },
@@ -195,8 +199,8 @@ export default function IndexScreen() {
         const initialRegion: Region = {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
-          latitudeDelta: 0.0922 / 4,
-          longitudeDelta: 0.0421 / 4,
+          latitudeDelta: 0.0922 / 8,
+          longitudeDelta: 0.0421 / 8,
         };
         setCurrentLocation(initialRegion);
 
@@ -211,8 +215,8 @@ export default function IndexScreen() {
               setCurrentLocation((prev) => ({
                 latitude: newLocation.coords.latitude,
                 longitude: newLocation.coords.longitude,
-                latitudeDelta: prev?.latitudeDelta || 0.0922 / 4,
-                longitudeDelta: prev?.longitudeDelta || 0.0421 / 4,
+                latitudeDelta: prev?.latitudeDelta || 0.0922 / 8,
+                longitudeDelta: prev?.longitudeDelta || 0.0421 / 8,
               }));
             },
           );
@@ -249,8 +253,8 @@ export default function IndexScreen() {
     const offset: Region = {
       latitude: coordinate.latitude,
       longitude: coordinate.longitude,
-      latitudeDelta: 0.001,
-      longitudeDelta: 0.001,
+      latitudeDelta: 0.002,
+      longitudeDelta: 0.002,
     };
 
     offset.latitude += offset.latitudeDelta * 0.5;
@@ -343,8 +347,8 @@ export default function IndexScreen() {
     const region: Region = {
       latitude: currentLocation!.latitude,
       longitude: currentLocation!.longitude,
-      latitudeDelta: 0.0922 / 4,
-      longitudeDelta: 0.0421 / 4,
+      latitudeDelta: 0.0922 / 8,
+      longitudeDelta: 0.0421 / 8,
     };
 
     const boundaries = await mapRef.current?.getMapBoundaries();
@@ -436,140 +440,152 @@ export default function IndexScreen() {
     return <LoadingComponent text="Carregando sensores..." />;
   }
 
-  if (isSensorsError) {
+  if (isSensorsError || !sensors) {
     return (
       <ErrorComponent
-        error={"Ocorreu um erro ao carregar os sensores."}
+        error={
+          isSensorsError
+            ? "Ocorreu um erro ao carregar os sensores."
+            : "Não existe nenhum sensor cadastrado"
+        }
         refetch={sensorsRefetch}
+        withRefetch={isSensorsError}
       />
     );
   }
 
   return (
-    <View style={styles.container}>
-      {currentLocation && (
-        <MapView
-          ref={mapRef}
-          mapType="hybrid"
-          rotateEnabled={false}
-          pitchEnabled={false}
-          provider={PROVIDER_GOOGLE}
-          style={styles.map}
-          initialRegion={currentLocation}
-          showsUserLocation
-          showsMyLocationButton={false}
-          zoomControlEnabled={false}
-          zoomEnabled
-          showsPointsOfInterest={false}
-          showsCompass={false}
-          showsBuildings={false}
-          toolbarEnabled={false}
-          loadingEnabled={true}
-          loadingIndicatorColor={theme.colors.primary}
-          loadingBackgroundColor={theme.colors.background}
-        >
-          {sensors?.map((sensor) => (
-            <Marker
-              ref={(ref) => (markerRefs.current[sensor.identifier] = ref)}
-              key={sensor.identifier}
-              coordinate={sensor.coordinate}
-              title={`${sensor.name} (${sensor.identifier})`}
-              pinColor={sensor.working ? "green" : "wheat"}
-              calloutAnchor={{ x: 0.5, y: -0.15 }}
-              onPress={() =>
-                handleMarkerPress(sensor.coordinate, sensor.identifier)
-              }
-            >
-              <Callout tooltip>
-                <View style={{ alignItems: "center" }}>
-                  <Surface elevation={2} style={styles.surfaceTooltip}>
-                    <Text variant="titleMedium" style={styles.modalTitle}>
-                      {sensor.name} ({sensor.identifier})
-                    </Text>
-                    <Divider style={{ marginBottom: 8 }} />
+    <ScreenWrapper withScrollView={false}>
+      <MapView
+        ref={mapRef}
+        mapType="hybrid"
+        rotateEnabled={false}
+        pitchEnabled={false}
+        provider={PROVIDER_GOOGLE}
+        style={StyleSheet.absoluteFillObject}
+        initialRegion={{
+          latitude: currentLocation
+            ? currentLocation.latitude
+            : sensors[0].coordinate.latitude,
+          longitude: currentLocation
+            ? currentLocation.longitude
+            : sensors[0].coordinate.latitude,
+          latitudeDelta: 0.0922 / 8,
+          longitudeDelta: 0.0421 / 8,
+        }}
+        showsUserLocation
+        showsMyLocationButton={false}
+        zoomControlEnabled={false}
+        zoomEnabled
+        showsPointsOfInterest={false}
+        showsCompass={false}
+        showsBuildings={false}
+        toolbarEnabled={false}
+        loadingEnabled={true}
+        loadingIndicatorColor={theme.colors.primary}
+        loadingBackgroundColor={theme.colors.background}
+      >
+        {sensors.map((sensor) => (
+          <Marker
+            ref={(ref) => (markerRefs.current[sensor.identifier] = ref)}
+            key={sensor.identifier}
+            coordinate={sensor.coordinate}
+            title={`${sensor.name} (${sensor.identifier})`}
+            pinColor={sensor.working ? "green" : "wheat"}
+            calloutAnchor={{ x: 0.5, y: -0.15 }}
+            onPress={() =>
+              handleMarkerPress(sensor.coordinate, sensor.identifier)
+            }
+          >
+            <Callout tooltip>
+              <View style={{ alignItems: "center" }}>
+                <Surface elevation={2} style={styles.surfaceTooltip}>
+                  <Text variant="titleMedium" style={styles.modalTitle}>
+                    {sensor.name} ({sensor.identifier})
+                  </Text>
+                  <Divider style={{ marginBottom: 8 }} />
 
-                    <View style={styles.chipRow}>
-                      <Chip
-                        icon={sensor.working ? "check-circle" : "alert-circle"}
-                        textStyle={
-                          sensor.working
-                            ? undefined
-                            : { color: theme.colors.error }
-                        }
-                        style={
-                          sensor.working
-                            ? undefined
-                            : { backgroundColor: theme.colors.errorContainer }
-                        }
-                        theme={{
-                          colors: {
-                            primary: !sensor.working
-                              ? theme.colors.error
-                              : theme.colors.primary,
-                          },
-                        }}
-                      >
-                        {sensor.working ? "Em operação" : "Desligado"}
-                      </Chip>
-                      <Chip
-                        icon={
-                          sensor.irrigationAvailable ? "water" : "water-off"
-                        }
-                        disabled={!sensor.irrigationAvailable}
-                      >
-                        {sensor.irrigationAvailable
-                          ? "Irrigar disponível"
-                          : "Irrigar indisponível"}
-                      </Chip>
-                    </View>
+                  <View style={styles.chipRow}>
+                    <Chip
+                      icon={sensor.working ? "check-circle" : "alert-circle"}
+                      textStyle={
+                        sensor.working
+                          ? undefined
+                          : { color: theme.colors.error }
+                      }
+                      style={
+                        sensor.working
+                          ? undefined
+                          : { backgroundColor: theme.colors.errorContainer }
+                      }
+                      theme={{
+                        colors: {
+                          primary: !sensor.working
+                            ? theme.colors.error
+                            : theme.colors.primary,
+                        },
+                      }}
+                    >
+                      {sensor.working ? "Em operação" : "Desligado"}
+                    </Chip>
+                    <Chip
+                      icon={sensor.irrigationAvailable ? "water" : "water-off"}
+                      disabled={!sensor.irrigationAvailable}
+                    >
+                      {sensor.irrigationAvailable
+                        ? "Irrigar disponível"
+                        : "Irrigar indisponível"}
+                    </Chip>
+                  </View>
 
-                    {getSensorItems(sensor).map((item, index) => (
-                      <List.Item
-                        key={index}
-                        title={() => (
-                          <Text>
-                            {item.title}
-                            {": "}
-                            <Text
-                              style={{
-                                fontWeight: "bold",
-                              }}
-                            >
-                              {item.description}
+                  {!sensor.working
+                    ? null
+                    : getSensorItems(sensor).map((item, index) => (
+                        <List.Item
+                          key={index}
+                          title={() => (
+                            <Text>
+                              {item.title}
+                              {": "}
+                              <Text
+                                style={{
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                {item.description}
+                              </Text>
                             </Text>
-                          </Text>
-                        )}
-                        left={(props) => (
-                          <List.Icon
-                            icon={item.icon}
-                            {...props}
-                            color={theme.colors.primary}
-                          />
-                        )}
-                      />
-                    ))}
-                  </Surface>
-                  <View
-                    style={[
-                      styles.arrow,
-                      {
-                        borderTopColor: theme.colors.elevation.level2,
-                      },
-                    ]}
-                  />
-                </View>
-              </Callout>
-            </Marker>
-          ))}
-          {currentMapLayer !== "none" && (
-            <UrlTile
-              key={currentMapLayer}
-              urlTemplate={`${WEATHER_CONFIG.MAP_URL}/${currentMapLayer}/{z}/{x}/{y}.png?appid=${WEATHER_CONFIG.API_KEY}`}
-              zIndex={-1}
-            />
-          )}
-        </MapView>
-      )}
+                          )}
+                          left={(props) => (
+                            <List.Icon
+                              icon={item.icon}
+                              {...props}
+                              color={theme.colors.primary}
+                            />
+                          )}
+                        />
+                      ))}
+                </Surface>
+                <View
+                  style={[
+                    styles.arrow,
+                    {
+                      borderTopColor: theme.colors.elevation.level2,
+                    },
+                  ]}
+                />
+              </View>
+            </Callout>
+          </Marker>
+        ))}
+        {currentMapLayer !== "none" && (
+          <UrlTile
+            key={currentMapLayer}
+            urlTemplate={`${WEATHER_CONFIG.MAP_URL}/${currentMapLayer}/{z}/{x}/{y}.png?appid=${WEATHER_CONFIG.API_KEY}`}
+            zIndex={-1}
+          />
+        )}
+      </MapView>
 
       <FAB
         icon="leaf"
@@ -584,10 +600,6 @@ export default function IndexScreen() {
         style={styles.layerButton}
         onPress={() => setLayerModalVisible(true)}
       />
-
-      <MapLayerLegend />
-      <SensorsModal />
-      <LayerSelectionModal />
 
       <FAB
         icon="plus"
@@ -604,13 +616,19 @@ export default function IndexScreen() {
         style={styles.zoomOutButton}
       />
 
-      <FAB
-        icon="crosshairs-gps"
-        size="small"
-        variant="secondary"
-        onPress={handleMyLocation}
-        style={styles.findMeButton}
-      />
+      {currentLocation && (
+        <FAB
+          icon="crosshairs-gps"
+          size="small"
+          variant="secondary"
+          onPress={handleMyLocation}
+          style={styles.findMeButton}
+        />
+      )}
+
+      <MapLayerLegend />
+      <SensorsModal />
+      <LayerSelectionModal />
 
       <Snackbar
         visible={snackbar.visible}
@@ -629,17 +647,11 @@ export default function IndexScreen() {
       >
         {snackbar.message}
       </Snackbar>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
   layerButton: {
     position: "absolute",
     bottom: 36,

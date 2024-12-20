@@ -1,3 +1,6 @@
+/**
+ * Calcula o ponto de orvalho com base na temperatura e umidade
+ */
 export const calculateDewPoint = (temp: number, humidity: number): number => {
   const a = 17.27;
   const b = 237.7;

@@ -1,7 +1,6 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { Appbar, Divider, Menu, Tooltip, useTheme } from "react-native-paper";
-import { Colors, useThemeMode } from "@/libs/theme";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useThemeMode } from "@/libs/theme";
 
 type ThemeOption = {
   label: string;
@@ -27,8 +26,6 @@ function AppHeader() {
     { label: "Tema Claro", value: "light", icon: "white-balance-sunny" },
     { label: "Tema Escuro", value: "dark", icon: "weather-night" },
   ];
-
-  console.log(themeMode);
 
   return (
     <Appbar.Header elevated mode="small">

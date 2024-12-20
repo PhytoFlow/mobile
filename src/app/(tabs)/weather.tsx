@@ -1,61 +1,36 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
 import { View, FlatList, StyleSheet } from "react-native";
 import { Text, useTheme } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import * as Location from "expo-location";
-import { fetchWeatherData } from "@/libs/api/weather";
-import { WeatherUI } from "@/libs/models/weather";
-import { RenderDay } from "@/components/weather/RenderDay";
-import { CurrentWeather } from "@/components/weather/CurrentWeather";
-import ScreenWrapper from "@/components/ScreenWrapper";
-import NetInfo from "@react-native-community/netinfo";
-import ErrorComponent from "@/components/Error";
-import LoadingComponent from "@/components/Loading";
 
-export default function HomeScreen() {
+import { fetchWeather } from "@/libs/api/weather";
+import { CurrentWeather, RenderDay } from "@/components/weather";
+import {
+  ScreenWrapper,
+  ErrorComponent,
+  LoadingComponent,
+} from "@/components/shared";
+import { useQuery } from "@tanstack/react-query";
+
+export default function WeatherScreen() {
   const theme = useTheme();
-  const [weather, setWeather] = useState<WeatherUI | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const getWeatherData = useCallback(async () => {
-    try {
-      const netState = await NetInfo.fetch();
-      if (!netState.isConnected) {
-        setError("Sem conexão com a internet");
-        setLoading(false);
-        return;
-      }
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setError("Permissão de localização negada");
-        setLoading(false);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      const data = await fetchWeatherData({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      setWeather(data);
-      setError(null);
-    } catch (err) {
-      console.error("Erro ao buscar dados meteorológicos:", err);
-      setError("Falha ao carregar dados meteorológicos");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    getWeatherData();
-  }, [getWeatherData]);
+  const {
+    data: weather,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["weather"],
+    queryFn: fetchWeather,
+    refetchInterval: 10 * 60000,
+    refetchIntervalInBackground: true,
+    retry: 3,
+  });
 
   const renderContent = () => {
-    const { current, location, forecast } = weather!;
+    if (!weather) return null;
+    const { current, location, forecast } = weather;
 
     return (
       <View style={styles.mainContainer}>
@@ -101,11 +76,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenWrapper withScrollView contentContainerStyle={styles.screenWrapper}>
-      {loading ? (
+    <ScreenWrapper contentContainerStyle={styles.screenWrapper}>
+      {isLoading ? (
         <LoadingComponent text="Carregando dados climáticos..." />
-      ) : error ? (
-        <ErrorComponent error={error} refetch={getWeatherData} />
+      ) : isError ? (
+        <ErrorComponent error={error.message} refetch={refetch} />
       ) : (
         renderContent()
       )}

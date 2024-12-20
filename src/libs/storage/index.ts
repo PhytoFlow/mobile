@@ -1,5 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+/**
+ * Gerencia operações de armazenamento assíncrono com AsyncStorage, incluindo obter, definir, remover e limpar itens.
+ */
 export const Storage = {
   async getItem<T>(key: string): Promise<T | null> {
     try {

@@ -1,8 +1,7 @@
-import TabBar from "@/components/TabBar";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
-import AppBar from "@/components/AppBar";
+import { AppBar, TabBar } from "@/components/layout";
 
 function TabLayout() {
   return (
@@ -28,14 +27,18 @@ function TabLayout() {
       />
 
       <Tabs.Screen
-        name="history"
+        name="dashboard"
         options={{
-          title: "Histórico",
+          title: "Painel",
           tabBarIcon: (props) => (
             <MaterialCommunityIcons
               {...props}
               size={24}
-              name={props.focused ? "av-timer" : "history"}
+              name={
+                props.focused
+                  ? "view-dashboard-variant"
+                  : "view-dashboard-variant-outline"
+              }
             />
           ),
         }}
