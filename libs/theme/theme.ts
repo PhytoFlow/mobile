@@ -2,6 +2,7 @@ import {
   MD3DarkTheme,
   MD3LightTheme,
   adaptNavigationTheme,
+  configureFonts,
 } from "react-native-paper";
 import {
   DarkTheme as NavigationDarkTheme,
@@ -9,8 +10,30 @@ import {
 } from "@react-navigation/native";
 import { Colors } from "./colors";
 
-const AppDarkTheme = { ...MD3DarkTheme, colors: Colors.dark };
-const AppLightTheme = { ...MD3LightTheme, colors: Colors.light };
+const baseVariants = configureFonts({
+  config: { fontFamily: "PoppinsRegular" },
+});
+
+const customVariants = {
+  titleMedium: {
+    ...baseVariants.titleMedium,
+    fontFamily: "PoppinsMedium",
+  },
+  labelMedium: {
+    ...baseVariants.labelMedium,
+    fontFamily: "PoppinsMedium",
+  },
+} as const;
+
+const fonts = configureFonts({
+  config: {
+    ...baseVariants,
+    ...customVariants,
+  },
+});
+
+const AppDarkTheme = { ...MD3DarkTheme, fonts, colors: Colors.dark };
+const AppLightTheme = { ...MD3LightTheme, fonts, colors: Colors.light };
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationDark: NavigationDarkTheme,

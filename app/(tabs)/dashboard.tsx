@@ -18,6 +18,7 @@ import { fetchDashboard } from "@/libs/api/backend";
 import { LineChartData } from "react-native-chart-kit/dist/line-chart/LineChart";
 import { chartColors } from "@/libs/theme";
 import { rgbToRgba } from "@/libs/utils/rgbToRgba";
+import { processFontFamily } from "expo-font";
 
 const getLabelForChart = (values: SensorValues[]) => {
   return values.map((value) =>
@@ -81,6 +82,9 @@ const SensorDashboard = () => {
         labelColor: () => theme.colors.onSurface,
         useShadowColorFromDataset: true,
         decimalPlaces: 1,
+        propsForLabels: {
+          fontFamily: processFontFamily("PoppinsRegular")!,
+        },
       }}
       style={{
         marginVertical: 8,

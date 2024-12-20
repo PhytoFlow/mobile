@@ -22,7 +22,6 @@
     "@tanstack/react-query": "^5.62.8",
     "axios": "^1.7.9",
     "expo": "~51.0.39",
-    "expo-constants": "~16.0.2",
     "expo-font": "~12.0.10",
     "expo-linear-gradient": "~13.0.2",
     "expo-location": "~17.0.1",

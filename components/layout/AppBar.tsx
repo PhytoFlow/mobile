@@ -31,7 +31,10 @@ function AppHeader() {
     <Appbar.Header elevated mode="small">
       <Appbar.Content
         title="PhytoFlow"
-        titleStyle={{ fontWeight: "bold", color: theme.colors.primary }}
+        titleStyle={{
+          fontFamily: "PoppinsBold",
+          color: theme.colors.primary,
+        }}
       />
       <Menu
         visible={visible}

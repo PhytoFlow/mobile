@@ -3,6 +3,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { AppBar, TabBar } from "@/components/layout";
 
+
 function TabLayout() {
   return (
     <Tabs

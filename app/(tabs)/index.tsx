@@ -549,7 +549,7 @@ export default function IndexScreen() {
                               {": "}
                               <Text
                                 style={{
-                                  fontWeight: "bold",
+                                  fontFamily: "PoppinsBold",
                                 }}
                               >
                                 {item.description}

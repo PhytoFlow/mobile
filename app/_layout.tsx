@@ -7,6 +7,12 @@ import { useThemeMode, Theme, Colors } from "@/libs/theme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useColorScheme, LogBox } from "react-native";
 import * as SystemUI from "expo-system-ui";
+import * as SplashScreen from "expo-splash-screen";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useFonts } from "expo-font";
+import "react-native-reanimated";
+
+export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = { initialRouteName: "(tabs)" };
 
@@ -14,9 +20,18 @@ const queryClient = new QueryClient();
 
 LogBox.ignoreLogs(["Support for defaultProps"]);
 
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   const systemColorScheme = useColorScheme();
   const { themeMode } = useThemeMode();
+
+  const [loaded, error] = useFonts({
+    PoppinsRegular: require("@/assets/fonts/Poppins-Regular.ttf"),
+    PoppinsMedium: require("@/assets/fonts/Poppins-Medium.ttf"),
+    PoppinsBold: require("@/assets/fonts/Poppins-Bold.ttf"),
+    ...MaterialCommunityIcons.font,
+  });
 
   const selectedTheme =
     themeMode === "auto" ? systemColorScheme || "light" : themeMode;
@@ -24,6 +39,20 @@ export default function RootLayout() {
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(Colors[selectedTheme].secondaryContainer);
   }, [selectedTheme]);
+
+  useEffect(() => {
+    if (error) throw error;
+  }, [error]);
+
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
+
+  if (!loaded) {
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

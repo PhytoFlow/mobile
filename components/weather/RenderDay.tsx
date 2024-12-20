@@ -51,7 +51,7 @@ const RenderDay: React.FC<RenderImageProp> = ({ item }) => {
 
 const styles = StyleSheet.create({
   card: {
-    width: 128,
+    width: 144,
     borderRadius: 24,
   },
   cardContent: {
