@@ -11,17 +11,17 @@ import {
 import { Colors } from "./colors";
 
 const baseVariants = configureFonts({
-  config: { fontFamily: "PoppinsRegular" },
+  config: { fontFamily: "RobotoRegular" },
 });
 
 const customVariants = {
   titleMedium: {
     ...baseVariants.titleMedium,
-    fontFamily: "PoppinsMedium",
+    fontFamily: "RobotoMedium",
   },
   labelMedium: {
     ...baseVariants.labelMedium,
-    fontFamily: "PoppinsMedium",
+    fontFamily: "RobotoMedium",
   },
 } as const;
 

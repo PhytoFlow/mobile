@@ -1,85 +1,44 @@
+import axios from "axios";
 import { Dashboard, Sensor } from "../models/backend";
 
-const MOCK_API_DELAY = 2000;
+const apiClient = axios.create({
+  baseURL: "https://1e68-200-137-197-75.ngrok-free.app",
+});
 
 export const fetchSensors = async (): Promise<Sensor[]> => {
-  // Simulating API call
-  await new Promise((resolve) => setTimeout(resolve, MOCK_API_DELAY));
+  try {
+    const response = await apiClient.get("/api/current");
 
-  // Simulate random API error
-  if (Math.random() < 0.1) {
-    throw new Error("Failed to fetch sensors data");
+    return response.data;
+  } catch (error) {
+    throw error;
   }
-
-  return [
-    {
-      identifier: "A1",
-      name: "Sensor Milho",
-      working: true,
-      irrigationAvailable: true,
-      coordinate: {
-        latitude: -16.60659,
-        longitude: -49.263305,
-      },
-      values: {
-        temperature: 25.8,
-        humidity: 76.8,
-        soil_humidity: 12,
-        light: 502,
-        uv_intensity: 15,
-        soil_temperature: 12,
-      },
-    },
-    {
-      identifier: "A2",
-      name: "Sensor Tomate",
-      working: true,
-      irrigationAvailable: false,
-      coordinate: {
-        latitude: -16.607046,
-        longitude: -49.265708,
-      },
-      values: {
-        temperature: 27,
-        humidity: 74.4,
-        soil_humidity: 21,
-        light: 561,
-        uv_intensity: 3,
-        soil_temperature: 11,
-      },
-    },
-    {
-      identifier: "A3",
-      name: "Sensor Repolho",
-      working: false,
-      irrigationAvailable: false,
-      coordinate: {
-        latitude: -16.605408,
-        longitude: -49.263652,
-      },
-      values: null,
-    },
-  ];
 };
 
 export const irrigateSensor = async (sensorId: string): Promise<void> => {
-  await new Promise((resolve) => setTimeout(resolve, MOCK_API_DELAY));
-
-  // Simulate random API error
-  if (Math.random() < 0.1) {
-    throw new Error("Failed to initiate irrigation");
+  try {
+    await apiClient.post("/api/aguar", {
+      identifier: sensorId,
+      time: 2000,
+    });
+  } catch (error) {
+    throw error;
   }
 };
 
 export const fetchDashboard = async (): Promise<Dashboard> => {
-  // Simulating API call
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  try {
+    const response = await apiClient.get("/api/dashboard");
 
-  // Simulate random API error
-  if (Math.random() < 0.1) {
-    throw new Error("Failed to fetch dashboard");
+    console.log(JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    throw error;
   }
+};
 
+/*
   return [
     {
       identifier: "A2",
@@ -221,3 +180,57 @@ export const fetchDashboard = async (): Promise<Dashboard> => {
     },
   ];
 };
+
+*/
+/*
+[
+    {
+      identifier: "A1",
+      name: "Sensor Milho",
+      working: true,
+      irrigationAvailable: true,
+      coordinate: {
+        latitude: -16.60659,
+        longitude: -49.263305,
+      },
+      values: {
+        temperature: 25.8,
+        humidity: 76.8,
+        soil_humidity: 12,
+        light: 502,
+        uv_intensity: 15,
+        soil_temperature: 12,
+      },
+    },
+    {
+      identifier: "A2",
+      name: "Sensor Tomate",
+      working: true,
+      irrigationAvailable: false,
+      coordinate: {
+        latitude: -16.607046,
+        longitude: -49.265708,
+      },
+      values: {
+        temperature: 27,
+        humidity: 74.4,
+        soil_humidity: 21,
+        light: 561,
+        uv_intensity: 3,
+        soil_temperature: 11,
+      },
+    },
+    {
+      identifier: "A3",
+      name: "Sensor Repolho",
+      working: false,
+      irrigationAvailable: false,
+      coordinate: {
+        latitude: -16.605408,
+        longitude: -49.263652,
+      },
+      values: null,
+    },
+  ];
+
+*/
