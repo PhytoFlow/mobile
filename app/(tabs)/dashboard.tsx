@@ -84,6 +84,7 @@ const SensorDashboard = () => {
         decimalPlaces: 1,
         propsForLabels: {
           fontFamily: processFontFamily("PoppinsRegular")!,
+          fontSize: 11,
         },
       }}
       style={{

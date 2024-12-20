@@ -469,7 +469,7 @@ export default function IndexScreen() {
             : sensors[0].coordinate.latitude,
           longitude: currentLocation
             ? currentLocation.longitude
-            : sensors[0].coordinate.latitude,
+            : sensors[0].coordinate.longitude,
           latitudeDelta: 0.0922 / 8,
           longitudeDelta: 0.0421 / 8,
         }}
