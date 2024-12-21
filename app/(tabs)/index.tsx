@@ -158,32 +158,32 @@ export default function IndexScreen() {
   const getSensorItems = (sensor: Sensor): SensorItem[] => [
     {
       title: "Temperatura",
-      description: `${sensor.values.temperature} °C`,
+      description: `${sensor.values.at(-1).temperature} °C`,
       icon: "thermometer",
     },
     {
       title: "Umidade do ar",
-      description: `${sensor.values.humidity} %`,
+      description: `${sensor.values.at(-1).humidity} %`,
       icon: "water-percent",
     },
     {
       title: "Umidade do Solo",
-      description: `${sensor.values.soil_humidity} %`,
+      description: `${sensor.values.at(-1).soil_humidity} %`,
       icon: "sprinkler",
     },
     {
       title: "Intensidade da luz",
-      description: `${sensor.values.light} cd`,
+      description: `${sensor.values.at(-1).light} cd`,
       icon: "lightbulb-on",
     },
     {
       title: "Índice UV",
-      description: `${sensor.values.uv_intensity}`,
+      description: `${sensor.values.at(-1).uv_intensity}`,
       icon: "sun-wireless",
     },
     {
       title: "Temperatura do Solo",
-      description: `${sensor.values.soil_temperature} °C`,
+      description: `${sensor.values.at(-1).soil_temperature} °C`,
       icon: "thermometer-lines",
     },
   ];
@@ -288,7 +288,7 @@ export default function IndexScreen() {
               keyExtractor={(sensor) => sensor.identifier}
               renderItem={({ item: sensor }) => (
                 <List.Item
-                  title={`${sensor.name} ${sensor.identifier}`}
+                  title={sensor.name}
                   description={sensor.working ? "Em operação" : "Desligado"}
                   left={(props) => (
                     <List.Icon
@@ -493,9 +493,9 @@ export default function IndexScreen() {
         {sensors.map((sensor) => (
           <Marker
             ref={(ref) => (markerRefs.current[sensor.identifier] = ref)}
-            key={sensor.identifier}
+            key={sensor.name}
             coordinate={sensor.coordinate}
-            title={`${sensor.name} (${sensor.identifier})`}
+            title={sensor.name}
             pinColor={sensor.working ? "green" : "wheat"}
             calloutAnchor={{ x: 0.5, y: -0.15 }}
             onPress={() =>

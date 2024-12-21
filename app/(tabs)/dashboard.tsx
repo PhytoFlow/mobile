@@ -21,7 +21,7 @@ import { rgbToRgba } from "@/libs/utils/rgbToRgba";
 import { processFontFamily } from "expo-font";
 
 const getLabelForChart = (values: SensorValues[]) => {
-  return values.map((value) =>
+  return values.slice(-10).map((value) =>
     new Date(value.timestamp).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
@@ -44,7 +44,7 @@ const SensorDashboard = () => {
   } = useQuery<Dashboard>({
     queryKey: ["dashboard"],
     queryFn: fetchDashboard,
-    refetchInterval: 30 * 60000,
+    refetchInterval: 5 * 60000,
     refetchIntervalInBackground: true,
     retry: 3,
   });
@@ -53,8 +53,11 @@ const SensorDashboard = () => {
     setSelectedSensor(sensors[0].identifier);
   }
 
+
   const selectedSensorData = useMemo(() => {
-    return sensors?.find((sensor) => sensor.identifier === selectedSensor);
+    return (
+      sensors && sensors?.find((sensor) => sensor.identifier === selectedSensor)
+    );
   }, [sensors, selectedSensor]);
 
   const getChartColor = (chart: SensorValueKeys) =>
@@ -66,6 +69,15 @@ const SensorDashboard = () => {
 
   if (isError) {
     return <ErrorComponent error={error.message} refetch={refetch} />;
+  }
+
+  if (!sensors || sensors.length === 0) {
+    return (
+      <ErrorComponent
+        error={"Não existe sensores cadastrados"}
+        refetch={refetch}
+      />
+    );
   }
 
   const renderChart = (data: LineChartData, unit: string | undefined) => (
@@ -84,7 +96,7 @@ const SensorDashboard = () => {
         decimalPlaces: 1,
         propsForLabels: {
           fontFamily: processFontFamily("RobotoRegular")!,
-          fontSize: 11,
+          fontSize: 10,
         },
       }}
       style={{
@@ -104,7 +116,7 @@ const SensorDashboard = () => {
         label="Sensor"
         placeholder="Selecione o sensor"
         options={sensors.map((sensor) => ({
-          label: `${sensor.name} (${sensor.identifier})`,
+          label: sensor.name,
           value: sensor.identifier,
         }))}
         value={selectedSensor}
@@ -122,22 +134,22 @@ const SensorDashboard = () => {
                 labels: getLabelForChart(selectedSensorData.values),
                 datasets: [
                   {
-                    data: selectedSensorData.values.map(
-                      (value) => value.temperature,
-                    ),
+                    data: selectedSensorData.values
+                      .slice(-10)
+                      .map((value) => value.temperature),
                     color: (opacity = 1) =>
                       rgbToRgba(getChartColor("temperature"), opacity),
                   },
                   {
-                    data: selectedSensorData.values.map(
-                      (value) => value.soil_temperature,
-                    ),
+                    data: selectedSensorData.values
+                      .slice(-10)
+                      .map((value) => value.soil_temperature),
 
                     color: (opacity = 1) =>
                       rgbToRgba(getChartColor("soil_temperature"), opacity),
                   },
                 ],
-                legend: ["Temperatura", "Temperatura do solo"],
+                legend: ["Temperatura do ar", "Temperatura do solo"],
               },
               "°C",
             )}
@@ -146,21 +158,21 @@ const SensorDashboard = () => {
                 labels: getLabelForChart(selectedSensorData.values),
                 datasets: [
                   {
-                    data: selectedSensorData.values.map(
-                      (value) => value.humidity,
-                    ),
+                    data: selectedSensorData.values
+                      .slice(-10)
+                      .map((value) => value.humidity),
                     color: (opacity = 1) =>
                       rgbToRgba(getChartColor("humidity"), opacity),
                   },
                   {
-                    data: selectedSensorData.values.map(
-                      (value) => value.soil_humidity,
-                    ),
+                    data: selectedSensorData.values
+                      .slice(-10)
+                      .map((value) => value.soil_humidity),
                     color: (opacity = 1) =>
                       rgbToRgba(getChartColor("soil_humidity"), opacity),
                   },
                 ],
-                legend: ["Umidade", "Umidade do solo"],
+                legend: ["Umidade do ar", "Umidade do solo"],
               },
               "%",
             )}
@@ -169,9 +181,9 @@ const SensorDashboard = () => {
                 labels: getLabelForChart(selectedSensorData.values),
                 datasets: [
                   {
-                    data: selectedSensorData.values.map(
-                      (value) => value.uv_intensity,
-                    ),
+                    data: selectedSensorData.values
+                      .slice(-10)
+                      .map((value) => value.uv_intensity),
                     color: (opacity = 1) =>
                       rgbToRgba(getChartColor("uv_intensity"), opacity),
                   },
@@ -185,7 +197,9 @@ const SensorDashboard = () => {
                 labels: getLabelForChart(selectedSensorData.values),
                 datasets: [
                   {
-                    data: selectedSensorData.values.map((value) => value.light),
+                    data: selectedSensorData.values
+                      .slice(-10)
+                      .map((value) => value.light),
                     color: (opacity = 1) =>
                       rgbToRgba(getChartColor("light"), opacity),
                   },
