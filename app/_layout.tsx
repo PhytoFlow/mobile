@@ -19,6 +19,7 @@ export const unstable_settings = { initialRouteName: "(tabs)" };
 const queryClient = new QueryClient();
 
 LogBox.ignoreLogs(["Support for defaultProps"]);
+LogBox.ignoreLogs(["Encountered two children"]);
 
 SplashScreen.preventAutoHideAsync();
 

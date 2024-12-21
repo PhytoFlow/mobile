@@ -23,7 +23,7 @@ export default function WeatherScreen() {
   } = useQuery({
     queryKey: ["weather"],
     queryFn: fetchWeather,
-    refetchInterval: 10 * 60000,
+    refetchInterval: 5 * 60000,
     refetchIntervalInBackground: true,
     retry: 3,
   });

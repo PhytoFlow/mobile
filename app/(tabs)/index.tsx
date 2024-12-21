@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, FlatList } from "react-native";
 import MapView, {
   PROVIDER_GOOGLE,
   Marker,
@@ -158,32 +158,32 @@ export default function IndexScreen() {
   const getSensorItems = (sensor: Sensor): SensorItem[] => [
     {
       title: "Temperatura",
-      description: `${sensor.values.temperature} °C`,
+      description: `${sensor.values.at(-1).temperature} °C`,
       icon: "thermometer",
     },
     {
       title: "Umidade do ar",
-      description: `${sensor.values.humidity} %`,
+      description: `${sensor.values.at(-1).humidity} %`,
       icon: "water-percent",
     },
     {
       title: "Umidade do Solo",
-      description: `${sensor.values.soil_humidity} %`,
+      description: `${sensor.values.at(-1).soil_humidity} %`,
       icon: "sprinkler",
     },
     {
       title: "Intensidade da luz",
-      description: `${sensor.values.light} cd`,
+      description: `${sensor.values.at(-1).light} cd`,
       icon: "lightbulb-on",
     },
     {
       title: "Índice UV",
-      description: `${sensor.values.uv_intensity}`,
+      description: `${sensor.values.at(-1).uv_intensity}`,
       icon: "sun-wireless",
     },
     {
       title: "Temperatura do Solo",
-      description: `${sensor.values.soil_temperature} °C`,
+      description: `${sensor.values.at(-1).soil_temperature} °C`,
       icon: "thermometer-lines",
     },
   ];
@@ -283,42 +283,47 @@ export default function IndexScreen() {
               Sensores disponíveis
             </Text>
             <Divider style={{ marginBottom: 8 }} />
-            {sensors?.map((sensor) => (
-              <List.Item
-                key={sensor.identifier}
-                title={`${sensor.name} ${sensor.identifier}`}
-                description={sensor.working ? "Em operação" : "Desligado"}
-                left={(props) => (
-                  <List.Icon
-                    {...props}
-                    icon="leaf-circle-outline"
-                    color={theme.colors.primary}
-                  />
-                )}
-                right={() => (
-                  <Button
-                    mode="contained"
-                    icon="water"
-                    onPress={() => handleIrrigation(sensor.identifier)}
-                    disabled={
-                      !sensor.irrigationAvailable ||
-                      !sensor.working ||
-                      irrigateMutation.isPending
-                    }
-                    loading={
-                      irrigateMutation.isPending &&
-                      irrigateMutation.variables === sensor.identifier
-                    }
-                  >
-                    Irrigar
-                  </Button>
-                )}
-                onPress={() => {
-                  handleMarkerPress(sensor.coordinate, sensor.identifier);
-                  setSensorsModalVisible(false);
-                }}
-              />
-            ))}
+            <FlatList
+              data={sensors}
+              keyExtractor={(sensor) => sensor.identifier}
+              renderItem={({ item: sensor }) => (
+                <List.Item
+                  title={sensor.name}
+                  description={sensor.working ? "Em operação" : "Desligado"}
+                  left={(props) => (
+                    <List.Icon
+                      {...props}
+                      icon="leaf-circle-outline"
+                      color={theme.colors.primary}
+                    />
+                  )}
+                  right={() => (
+                    <Button
+                      mode="contained"
+                      icon="water"
+                      onPress={() => handleIrrigation(sensor.identifier)}
+                      disabled={
+                        !sensor.irrigationAvailable ||
+                        !sensor.working ||
+                        irrigateMutation.isPending
+                      }
+                      loading={
+                        irrigateMutation.isPending &&
+                        irrigateMutation.variables === sensor.identifier
+                      }
+                    >
+                      Irrigar
+                    </Button>
+                  )}
+                  onPress={() => {
+                    handleMarkerPress(sensor.coordinate, sensor.identifier);
+                    setSensorsModalVisible(false);
+                  }}
+                />
+              )}
+              contentContainerStyle={{ paddingBottom: 16 }}
+              style={{ maxHeight: 400 }}
+            />
           </Surface>
         </Modal>
       </Portal>
@@ -488,9 +493,9 @@ export default function IndexScreen() {
         {sensors.map((sensor) => (
           <Marker
             ref={(ref) => (markerRefs.current[sensor.identifier] = ref)}
-            key={sensor.identifier}
+            key={sensor.name}
             coordinate={sensor.coordinate}
-            title={`${sensor.name} (${sensor.identifier})`}
+            title={sensor.name}
             pinColor={sensor.working ? "green" : "wheat"}
             calloutAnchor={{ x: 0.5, y: -0.15 }}
             onPress={() =>
